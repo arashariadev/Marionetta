@@ -11,7 +11,7 @@ using Marionetta.Messengers;
 using System;
 using System.Threading.Tasks;
 
-namespace Marionetta;
+namespace Marionetta.Drivers;
 
 public abstract class Driver<TMessenger> : IDisposable
     where TMessenger : Messenger

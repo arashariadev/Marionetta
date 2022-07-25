@@ -13,9 +13,8 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
 using System.Threading;
-using System.Threading.Tasks;
 
-namespace Marionetta;
+namespace Marionetta.Drivers;
 
 public sealed class Marionettist : Driver<ActiveMessenger>
 {
@@ -24,14 +23,11 @@ public sealed class Marionettist : Driver<ActiveMessenger>
     private Process puppetProcess = new();
     private bool exited;
 
-    public Marionettist(string puppetPath, string? workingDirectoryPath = null)
+    public Marionettist(
+        string puppetPath,
+        string workingDirectoryPath,
+        string[] additionalArgs)
     {
-        if (workingDirectoryPath == null)
-        {
-            workingDirectoryPath = Path.GetDirectoryName(puppetPath) ??
-                Path.DirectorySeparatorChar.ToString();
-        }
-
         this.serverOutStream = new AnonymousPipeServerStream(
             PipeDirection.Out, HandleInheritability.Inheritable);
         this.serverInStream = new AnonymousPipeServerStream(
@@ -42,7 +38,8 @@ public sealed class Marionettist : Driver<ActiveMessenger>
 
         this.puppetProcess.StartInfo.FileName = puppetPath;
         this.puppetProcess.StartInfo.Arguments =
-            $"{this.serverOutStream.GetClientHandleAsString()} {this.serverInStream.GetClientHandleAsString()}";
+            $"{this.serverOutStream.GetClientHandleAsString()} {this.serverInStream.GetClientHandleAsString()} " +
+            string.Join(" ", additionalArgs);
         this.puppetProcess.StartInfo.UseShellExecute = false;
         this.puppetProcess.StartInfo.CreateNoWindow = true;
         this.puppetProcess.StartInfo.ErrorDialog = false;
