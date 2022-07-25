@@ -22,20 +22,42 @@ namespace Marionetta;
 [TestFixture]
 public sealed class OutProcessTests
 {
-    [Test]
-    public async Task OutProcess1()
-    {
 #if DEBUG
-        var configuration = "Debug";
+    private static readonly string configuration = "Debug";
 #else
-        var configuration = "Release";
+    private static readonly string configuration = "Release";
 #endif
 
-        var puppetPath = Path.GetFullPath(Path.Combine(
-            Path.GetDirectoryName(this.GetType().Assembly.Location),
-            $@"..\..\..\..\Marionetta.Tests.Puppet\bin\{configuration}\{ThisAssembly.AssemblyMetadata.TargetFramework}\Marionetta.Tests.Puppet.exe"));
+    private static readonly string puppetPath = Path.GetFullPath(Path.Combine(
+        Path.GetDirectoryName(typeof(OutProcessTests).Assembly.Location),
+        $@"..\..\..\..\Marionetta.Tests.Puppet\bin\{configuration}\{ThisAssembly.AssemblyMetadata.TargetFramework}\Marionetta.Tests.Puppet.exe"));
 
-        using var marionettist = new Marionettist(puppetPath);
+    [Test]
+    public async Task OutProcessWithPassivePuppet()
+    {
+        using var marionettist = DriverFactory.CreateMarionettist(puppetPath, null, "Passive");
+
+        static Task<int> abc(int a, int b) =>
+            Task.FromResult(a + b);
+        static Task<string> def(string a, string b) =>
+            Task.FromResult(a + b);
+
+        marionettist.RegisterTarget("abc", abc);
+        marionettist.RegisterTarget("def", def);
+
+        marionettist.Start();
+
+        var result1 = await marionettist.InvokeTargetAsync<int>("abc", 123, 456);
+        var result2 = await marionettist.InvokeTargetAsync<string>("def", "aaa", "bbb");
+
+        AreEqual(123 + 456, result1);
+        AreEqual("aaabbb", result2);
+    }
+
+    [Test]
+    public async Task OutProcessWithActivePuppet()
+    {
+        using var marionettist = DriverFactory.CreateMarionettist(puppetPath, null, "Active");
 
         static Task<int> abc(int a, int b) =>
             Task.FromResult(a + b);

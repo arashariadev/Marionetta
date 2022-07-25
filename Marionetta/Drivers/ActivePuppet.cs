@@ -9,23 +9,22 @@
 
 using Marionetta.Messengers;
 using System.IO.Pipes;
-using System.Threading;
 
-namespace Marionetta;
+namespace Marionetta.Drivers;
 
-public sealed class Puppet : Driver<PassiveMessenger>
+public sealed class ActivePuppet : Driver<ActiveMessenger>
 {
     private readonly AnonymousPipeClientStream clientInStream;
     private readonly AnonymousPipeClientStream clientOutStream;
 
-    public Puppet(string[] args)
+    public ActivePuppet(string inStreamName, string outStreamName)
     {
         this.clientInStream = new AnonymousPipeClientStream(
-            PipeDirection.In, args[0]);
+            PipeDirection.In, inStreamName);
         this.clientOutStream = new AnonymousPipeClientStream(
-            PipeDirection.Out, args[1]);
+            PipeDirection.Out, outStreamName);
 
-        this.messenger = new PassiveMessenger(
+        this.messenger = new ActiveMessenger(
             this.clientInStream, this.clientOutStream);
     }
 
@@ -36,6 +35,6 @@ public sealed class Puppet : Driver<PassiveMessenger>
         this.clientOutStream.Dispose();
     }
 
-    public void Run(CancellationToken ct = default) =>
-        this.messenger.Run(ct);
+    public void Start() =>
+        this.messenger.Start();
 }

@@ -7,8 +7,8 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////
 
+using Marionetta.Drivers;
 using Marionetta.Messengers;
-using System;
 using System.Threading.Tasks;
 
 namespace Marionetta;
@@ -19,11 +19,8 @@ public static class Extension
         this Messenger messenger, string name, params object?[] args) =>
         messenger.InvokeTargetAsync<object?>(name, args);
 
-    public static Task InvokeTargetAsync(
-        this Puppet puppet, string name, params object?[] args) =>
-        puppet.InvokeTargetAsync<object?>(name, args);
-
-    public static Task InvokeTargetAsync(
-        this Marionettist marionettist, string name, params object?[] args) =>
-        marionettist.InvokeTargetAsync<object?>(name, args);
+    public static Task InvokeTargetAsync<TMessenger>(
+        this Driver<TMessenger> driver, string name, params object?[] args)
+        where TMessenger : Messenger =>
+        driver.InvokeTargetAsync<object?>(name, args);
 }
