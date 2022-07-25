@@ -71,6 +71,7 @@ public sealed class OutProcessTests
 
         var result1 = await marionettist.InvokeTargetAsync<int>("abc", 123, 456);
         var result2 = await marionettist.InvokeTargetAsync<string>("def", "aaa", "bbb");
+        await marionettist.InvokeTargetAsync("ghi");
 
         AreEqual(123 + 456, result1);
         AreEqual("aaabbb", result2);
