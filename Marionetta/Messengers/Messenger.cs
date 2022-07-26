@@ -196,7 +196,11 @@ public abstract class Messenger : IDisposable
                     case (var id, MessageTypes.Invoking, var body):
                         if (body?.ToObject<InvokingMessage>() is (var name1, var arguments) &&
                             TryGetTarget(name1) is { } target &&
+#if NETSTANDARD1_3 || NETSTANDARD1_4 || NETSTANDARD1_5 || NETSTANDARD1_6
+                            target.GetMethodInfo().GetParameters() is { } parameters &&
+#else
                             target.Method.GetParameters() is { } parameters &&
+#endif
                             arguments.Length == parameters.Length)
                         {
                             async void InvokeAsynchronously()
