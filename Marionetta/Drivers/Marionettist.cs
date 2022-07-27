@@ -7,6 +7,7 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////
 
+using Marionetta.Internal;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -31,9 +32,11 @@ public sealed class Marionettist : Driver<AnonymousPipeServerStream>
         ////////////////////////////////////////////////////////
         // Initialze child process.
 
-        this.puppetProcess.StartInfo.FileName = puppetPath;
+        var (appPath, arg0) =
+            Utilities.GetDotNetApplicationInvokingString(puppetPath);
+        this.puppetProcess.StartInfo.FileName = appPath;
         this.puppetProcess.StartInfo.Arguments =
-            $"{base.OutStream.GetClientHandleAsString()} {base.InStream.GetClientHandleAsString()} " +
+            $"{arg0} {base.OutStream.GetClientHandleAsString()} {base.InStream.GetClientHandleAsString()} " +
             string.Join(" ", additionalArgs);
         this.puppetProcess.StartInfo.UseShellExecute = false;
         this.puppetProcess.StartInfo.CreateNoWindow = true;

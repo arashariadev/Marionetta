@@ -26,6 +26,9 @@ public sealed class InMemoryFullDuplexTests
         using var slavePuppet = new Puppet(
             masterPuppet.SendStreamName, masterPuppet.ReceiveStreamName);
 
+        var tcs = new TaskCompletionSource<bool>();
+        slavePuppet.ShutdownRequested += (s, e) => tcs.TrySetResult(true);
+
         static Task<int> abc(int a, int b) =>
             Task.FromResult(a + b);
         static Task<string> def(string a, string b) =>
@@ -40,10 +43,11 @@ public sealed class InMemoryFullDuplexTests
         var result1 = await masterPuppet.InvokePeerMethodAsync<int>("abc", 123, 456);
         var result2 = await masterPuppet.InvokePeerMethodAsync<string>("def", "aaa", "bbb");
 
-        slavePuppet.Shutdown();
         masterPuppet.Shutdown();
 
         AreEqual(123 + 456, result1);
         AreEqual("aaabbb", result2);
+
+        await tcs.Task;
     }
 }

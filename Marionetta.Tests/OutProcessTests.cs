@@ -16,8 +16,6 @@ using static NUnit.Framework.Assert;
 
 namespace Marionetta;
 
-#if NET48
-
 [TestFixture]
 public sealed class OutProcessTests
 {
@@ -26,37 +24,20 @@ public sealed class OutProcessTests
 #else
     private static readonly string configuration = "Release";
 #endif
+#if NETFRAMEWORK
+    private static readonly string fileName = "Marionetta.Tests.Puppet.exe";
+#else
+    private static readonly string fileName = "Marionetta.Tests.Puppet.dll";
+#endif
 
     private static readonly string puppetPath = Path.GetFullPath(Path.Combine(
-        Path.GetDirectoryName(typeof(OutProcessTests).Assembly.Location),
-        $@"..\..\..\..\Marionetta.Tests.Puppet\bin\{configuration}\{ThisAssembly.AssemblyMetadata.TargetFramework}\Marionetta.Tests.Puppet.exe"));
+        Path.GetDirectoryName(typeof(OutProcessTests).Assembly.Location) ?? Path.DirectorySeparatorChar.ToString(),
+        $@"..\..\..\..\Marionetta.Tests.Puppet\bin\{configuration}\{ThisAssembly.AssemblyMetadata.TargetFramework}\{fileName}"));
 
     [Test]
-    public async Task OutProcessWithPassivePuppet()
+    public async Task OutProcessPuppet()
     {
-        using var marionettist = DriverFactory.CreateMarionettist(puppetPath, null, "Passive");
-
-        static Task<int> abc(int a, int b) =>
-            Task.FromResult(a + b);
-        static Task<string> def(string a, string b) =>
-            Task.FromResult(a + b);
-
-        marionettist.RegisterFunc<int, int, int>("abc", abc);
-        marionettist.RegisterFunc<string, string, string>("def", def);
-
-        marionettist.Start();
-
-        var result1 = await marionettist.InvokePeerMethodAsync<int>("abc", 123, 456);
-        var result2 = await marionettist.InvokePeerMethodAsync<string>("def", "aaa", "bbb");
-
-        AreEqual(123 + 456, result1);
-        AreEqual("aaabbb", result2);
-    }
-
-    [Test]
-    public async Task OutProcessWithActivePuppet()
-    {
-        using var marionettist = DriverFactory.CreateMarionettist(puppetPath, null, "Active");
+        using var marionettist = DriverFactory.CreateMarionettist(puppetPath);
 
         static Task<int> abc(int a, int b) =>
             Task.FromResult(a + b);
@@ -77,5 +58,3 @@ public sealed class OutProcessTests
         AreEqual("aaabbb", result2);
     }
 }
-
-#endif

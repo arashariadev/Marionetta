@@ -13,6 +13,7 @@ using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -160,5 +161,52 @@ public static class Utilities
 #endif
 
         return tcs.Task;
+    }
+
+    public readonly struct InvokingString
+    {
+        public readonly string Executable;
+        public readonly string? FirstArgument;
+
+        public InvokingString(
+            string executable, string? applicationPath = default)
+        {
+            this.Executable = executable;
+            this.FirstArgument = applicationPath;
+        }
+
+        public void Deconstruct(
+            out string executable, out string? firstArgument)
+        {
+            executable = this.Executable;
+            firstArgument = this.FirstArgument;
+        }
+    }
+
+    public static InvokingString GetDotNetApplicationInvokingString(string appPath)
+    {
+        if (!File.Exists(appPath))
+        {
+            throw new FileNotFoundException(appPath);
+        }
+        if (Path.GetExtension(appPath) == ".dll")
+        {
+            return new("dotnet", appPath);
+        }
+
+#if NETCOREAPP || NETSTANDARD
+        var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+#else
+        var isWindows = Environment.OSVersion.Platform == PlatformID.Win32NT;
+#endif
+
+        if (isWindows || Path.GetExtension(appPath) != ".exe")
+        {
+            return new(appPath);
+        }
+        else
+        {
+            return new("mono", appPath);
+        }
     }
 }

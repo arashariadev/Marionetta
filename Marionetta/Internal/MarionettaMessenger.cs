@@ -10,6 +10,7 @@
 using DupeNukem;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Threading;
 
 // Remove in future release.
 #pragma warning disable CS0618
@@ -18,14 +19,21 @@ namespace Marionetta.Internal
 {
     internal sealed class MarionettaMessenger : Messenger
     {
+        private readonly ManualResetEvent accepted = new(false);
+
         public MarionettaMessenger()
         {
         }
 
         public event EventHandler? ShutdownRequested;
 
-        public void RequestShutdownToPeer() =>
+        public void RequestShutdownToPeer(TimeSpan? timeout = default)
+        {
             base.SendControlMessageToPeer("shutdown", null);
+            this.accepted.WaitOne(timeout is { } ?
+                timeout.Value :
+                TimeSpan.FromMilliseconds(1000));
+        }
 
         protected override void OnReceivedControlMessage(
             string controlId, JToken? body)
@@ -33,7 +41,17 @@ namespace Marionetta.Internal
             switch (controlId)
             {
                 case "shutdown":
-                    this.ShutdownRequested?.Invoke(this, EventArgs.Empty);
+                    try
+                    {
+                        this.ShutdownRequested?.Invoke(this, EventArgs.Empty);
+                    }
+                    finally
+                    {
+                        base.SendControlMessageToPeer("accepted", null);
+                    }
+                    break;
+                case "accept":
+                    this.accepted.Set();
                     break;
             }
         }
