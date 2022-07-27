@@ -16,7 +16,7 @@
     <RootNamespace>Marionetta</RootNamespace>
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);CS1570;CS1591;CA1416</NoWarn>
+    <NoWarn>$(NoWarn);CS1570;CS1591;CA1416;CS0436</NoWarn>
 
     <Product>Marionetta</Product>
     <Trademark>Marionetta</Trademark>

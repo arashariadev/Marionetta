@@ -15,19 +15,44 @@ namespace Marionetta;
 
 public readonly struct PuppetArguments
 {
-    public readonly string InStreamName;
-    public readonly string OutStreamName;
+    public readonly string ReceiveStreamName;
+    public readonly string SendStreamName;
     public readonly string[] AdditionalArgs;
 
     public PuppetArguments(
-        string inStreamName, string outStreamName, string[] additionalArgs)
+        string receiveStreamName, string sendStreamName, string[] additionalArgs)
     {
-        this.InStreamName = inStreamName;
-        this.OutStreamName = outStreamName;
+        this.ReceiveStreamName = receiveStreamName;
+        this.SendStreamName = sendStreamName;
         this.AdditionalArgs = additionalArgs;
+    }
+
+    public void Deconstruct(
+        out string receiveStreamName, out string sendStreamName, out string[] additionalArgs)
+    {
+        receiveStreamName = this.ReceiveStreamName;
+        sendStreamName = this.SendStreamName;
+        additionalArgs = this.AdditionalArgs;
     }
 }
 
+public readonly struct PuppetPair
+{
+    public readonly MasterPuppet Master;
+    public readonly Puppet Slave;
+
+    public PuppetPair(MasterPuppet master, Puppet slave)
+    {
+        this.Master = master;
+        this.Slave = slave;
+    }
+
+    public void Deconstruct(out MasterPuppet master, out Puppet slave)
+    {
+        master = this.Master;
+        slave = this.Slave;
+    }
+}
 
 public static class DriverFactory
 {
@@ -36,14 +61,18 @@ public static class DriverFactory
         var inStreamName = args[0];
         var outStreamName = args[1];
         var additionalArgs = args.Skip(2).ToArray();
-        return new PuppetArguments(inStreamName, outStreamName, additionalArgs);
+        return new(inStreamName, outStreamName, additionalArgs);
     }
 
-    public static ActivePuppet CreateActivePuppet(PuppetArguments arguments) =>
-        new ActivePuppet(arguments.InStreamName, arguments.OutStreamName);
+    public static Puppet CreatePuppet(PuppetArguments arguments) =>
+        new Puppet(arguments.ReceiveStreamName, arguments.SendStreamName);
 
-    public static PassivePuppet CreatePassivePuppet(PuppetArguments arguments) =>
-        new PassivePuppet(arguments.InStreamName, arguments.OutStreamName);
+    public static PuppetPair CreatePuppetPair()
+    {
+        var master = new MasterPuppet();
+        var slave = new Puppet(master.SendStreamName, master.ReceiveStreamName);
+        return new(master, slave);
+    }
 
     public static Marionettist CreateMarionettist(
         string puppetPath,
@@ -56,6 +85,6 @@ public static class DriverFactory
                 Path.DirectorySeparatorChar.ToString();
         }
 
-        return new Marionettist(puppetPath, workingDirectoryPath, additionalArgs);
+        return new(puppetPath, workingDirectoryPath, additionalArgs);
     }
 }
