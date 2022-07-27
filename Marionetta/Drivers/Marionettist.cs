@@ -42,7 +42,9 @@ public sealed class Marionettist : Driver<ActiveMessenger>
             string.Join(" ", additionalArgs);
         this.puppetProcess.StartInfo.UseShellExecute = false;
         this.puppetProcess.StartInfo.CreateNoWindow = true;
+#if !NETSTANDARD1_3 && !NETSTANDARD1_4 && !NETSTANDARD1_5 && !NETSTANDARD1_6
         this.puppetProcess.StartInfo.ErrorDialog = false;
+#endif
         this.puppetProcess.StartInfo.WorkingDirectory = workingDirectoryPath;
 
         this.puppetProcess.Exited += (s, e) => this.exited = true;

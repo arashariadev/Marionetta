@@ -56,6 +56,24 @@ public static class Utilities
         var tcs = new TaskCompletionSource<int>();
         var cr = ct.Register(() => tcs.TrySetCanceled());
 
+#if NETSTANDARD1_3 || NETSTANDARD1_4 || NETSTANDARD1_5 || NETSTANDARD1_6
+        stream.ReadAsync(buffer, offset, count, ct).
+            ContinueWith(task =>
+            {
+                if (task.IsFaulted)
+                {
+                    tcs.TrySetException(task.Exception);
+                }
+                else if (task.IsCanceled)
+                {
+                    tcs.TrySetCanceled();
+                }
+                else
+                {
+                    tcs.TrySetResult(task.Result);
+                }
+            });
+#else
         var ar = stream.BeginRead(
             buffer, offset, count, ar =>
             {
@@ -82,7 +100,8 @@ public static class Utilities
                 tcs.TrySetException(ex);
             }
         }
-        
+#endif   
+
         return tcs.Task;
     }
 
@@ -92,6 +111,24 @@ public static class Utilities
         var tcs = new TaskCompletionSource<int>();
         var cr = ct.Register(() => tcs.TrySetCanceled());
 
+#if NETSTANDARD1_3 || NETSTANDARD1_4 || NETSTANDARD1_5 || NETSTANDARD1_6 || NETCOREAPP1_0 || NETCOREAPP1_1
+        stream.WriteAsync(buffer, offset, count, ct).
+            ContinueWith(task =>
+            {
+                if (task.IsFaulted)
+                {
+                    tcs.TrySetException(task.Exception);
+                }
+                else if (task.IsCanceled)
+                {
+                    tcs.TrySetCanceled();
+                }
+                else
+                {
+                    tcs.TrySetResult(0);
+                }
+            });
+#else
         var ar = stream.BeginWrite(
             buffer, offset, count, ar =>
             {
@@ -120,6 +157,7 @@ public static class Utilities
                 tcs.TrySetException(ex);
             }
         }
+#endif
 
         return tcs.Task;
     }

@@ -28,7 +28,11 @@ internal class GenericResultExtractor
         {
             if (!extractors.TryGetValue(taskType, out extractor!))
             {
+#if NETSTANDARD1_3 || NETSTANDARD1_4 || NETSTANDARD1_5 || NETSTANDARD1_6
+                var resultType = taskType.GenericTypeArguments[0];
+#else
                 var resultType = taskType.GetGenericArguments()[0];
+#endif
                 extractor = (GenericResultExtractor)Activator.CreateInstance(
                     typeof(GenericResultExtractorT<>).MakeGenericType(resultType))!;
                 extractors.Add(taskType, extractor);

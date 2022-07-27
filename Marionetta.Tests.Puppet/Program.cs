@@ -28,7 +28,7 @@ public static class Program
 
                     puppet.RegisterTarget("abc", (int a, int b) => Task.FromResult(a + b));
                     puppet.RegisterTarget("def", (string a, string b) => Task.FromResult(a + b));
-                    puppet.RegisterTarget("ghi", () => abort.Set());
+                    puppet.RegisterTarget("ghi", () => { abort.Set(); });
 
                     puppet.Start();
 
