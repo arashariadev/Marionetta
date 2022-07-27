@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using DupeNukem;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Marionetta;
@@ -8,33 +9,17 @@ public static class Program
     public static void Main(string[] args)
     {
         var arguments = DriverFactory.ParsePuppetArguments(args);
-        switch (arguments.AdditionalArgs[0])
-        {
-            case "Passive":
-                {
-                    using var puppet = DriverFactory.CreatePassivePuppet(arguments);
 
-                    puppet.RegisterTarget("abc", (int a, int b) => Task.FromResult(a + b));
-                    puppet.RegisterTarget("def", (string a, string b) => Task.FromResult(a + b));
+        using var puppet = DriverFactory.CreatePuppet(arguments);
 
-                    puppet.Run();
-                }
-                break;
-            case "Active":
-                {
-                    using var puppet = DriverFactory.CreateActivePuppet(arguments);
+        puppet.RegisterFunc("abc", (int a, int b) => Task.FromResult(a + b));
+        puppet.RegisterFunc("def", (string a, string b) => Task.FromResult(a + b));
 
-                    var abort = new ManualResetEvent(false);
+        puppet.Start();
 
-                    puppet.RegisterTarget("abc", (int a, int b) => Task.FromResult(a + b));
-                    puppet.RegisterTarget("def", (string a, string b) => Task.FromResult(a + b));
-                    puppet.RegisterTarget("ghi", () => { abort.Set(); });
+        using var shutdown = new ManualResetEvent(false);
+        puppet.ShutdownRequested += (s, e) => shutdown.Set();
 
-                    puppet.Start();
-
-                    abort.WaitOne();
-                }
-                break;
-        }
+        shutdown.WaitOne();
     }
 }

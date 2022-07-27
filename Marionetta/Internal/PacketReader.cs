@@ -30,7 +30,7 @@ internal sealed class PacketReader
         this.buffer = new byte[bufferSize];
     }
 
-    public async Task<Stream?> ReadPacketAsync(CancellationToken ct)
+    public async Task<byte[]?> ReadPacketAsync(CancellationToken ct)
     {
         while (true)
         {
@@ -79,7 +79,7 @@ internal sealed class PacketReader
                             this.currentIndex - this.currentStartIndex);
                         ms.Seek(0, SeekOrigin.Begin);
                         this.currentStartIndex = this.currentIndex;
-                        return ms;
+                        return ms.ToArray();
                     }
                     else
                     {
@@ -88,7 +88,7 @@ internal sealed class PacketReader
                             this.currentStartIndex,
                             this.currentIndex - this.currentStartIndex);
                         this.currentStartIndex = this.currentIndex;
-                        return ms;
+                        return ms.ToArray();
                     }
                 }
 
@@ -110,7 +110,7 @@ internal sealed class PacketReader
                     this.currentIndex - this.currentStartIndex);
                 ms.Seek(0, SeekOrigin.Begin);
                 this.currentStartIndex = this.currentIndex;
-                return ms;
+                return ms.ToArray();
             }
             else
             {
@@ -119,15 +119,22 @@ internal sealed class PacketReader
                     this.currentStartIndex,
                     this.currentIndex - this.currentStartIndex);
                 this.currentStartIndex = this.currentIndex;
-                return ms;
+                return ms.ToArray();
             }
         }
         else
         {
             var ms = this.currentStream;
-            ms?.Seek(0, SeekOrigin.Begin);
-            this.currentStream = null;
-            return ms;
+            if (ms != null)
+            {
+                ms.Seek(0, SeekOrigin.Begin);
+                this.currentStream = null;
+                return ms.ToArray();
+            }
+            else
+            {
+                return null;
+            }
         }
     }
 }

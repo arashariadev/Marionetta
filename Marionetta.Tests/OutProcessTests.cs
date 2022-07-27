@@ -7,13 +7,12 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////
 
+using DupeNukem;
 using NUnit.Framework;
 using System.IO;
 using System.Threading.Tasks;
 
 using static NUnit.Framework.Assert;
-
-#pragma warning disable CS0436 // Type conflicts with imported type
 
 namespace Marionetta;
 
@@ -42,13 +41,13 @@ public sealed class OutProcessTests
         static Task<string> def(string a, string b) =>
             Task.FromResult(a + b);
 
-        marionettist.RegisterTarget("abc", abc);
-        marionettist.RegisterTarget("def", def);
+        marionettist.RegisterFunc<int, int, int>("abc", abc);
+        marionettist.RegisterFunc<string, string, string>("def", def);
 
         marionettist.Start();
 
-        var result1 = await marionettist.InvokeTargetAsync<int>("abc", 123, 456);
-        var result2 = await marionettist.InvokeTargetAsync<string>("def", "aaa", "bbb");
+        var result1 = await marionettist.InvokePeerMethodAsync<int>("abc", 123, 456);
+        var result2 = await marionettist.InvokePeerMethodAsync<string>("def", "aaa", "bbb");
 
         AreEqual(123 + 456, result1);
         AreEqual("aaabbb", result2);
@@ -64,14 +63,15 @@ public sealed class OutProcessTests
         static Task<string> def(string a, string b) =>
             Task.FromResult(a + b);
 
-        marionettist.RegisterTarget("abc", abc);
-        marionettist.RegisterTarget("def", def);
+        marionettist.RegisterFunc<int, int, int>("abc", abc);
+        marionettist.RegisterFunc<string, string, string>("def", def);
 
         marionettist.Start();
 
-        var result1 = await marionettist.InvokeTargetAsync<int>("abc", 123, 456);
-        var result2 = await marionettist.InvokeTargetAsync<string>("def", "aaa", "bbb");
-        await marionettist.InvokeTargetAsync("ghi");
+        var result1 = await marionettist.InvokePeerMethodAsync<int>("abc", 123, 456);
+        var result2 = await marionettist.InvokePeerMethodAsync<string>("def", "aaa", "bbb");
+
+        marionettist.Shutdown();
 
         AreEqual(123 + 456, result1);
         AreEqual("aaabbb", result2);

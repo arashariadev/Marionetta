@@ -7,7 +7,6 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////
 
-using Marionetta.Messengers;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -16,29 +15,25 @@ using System.Threading;
 
 namespace Marionetta.Drivers;
 
-public sealed class Marionettist : Driver<ActiveMessenger>
+public sealed class Marionettist : Driver<AnonymousPipeServerStream>
 {
-    private readonly AnonymousPipeServerStream serverOutStream;
-    private readonly AnonymousPipeServerStream serverInStream;
     private Process puppetProcess = new();
-    private bool exited;
+    private bool puppetProcessExited;
 
     public Marionettist(
         string puppetPath,
         string workingDirectoryPath,
-        string[] additionalArgs)
+        string[] additionalArgs) :
+        base(
+            new(PipeDirection.In, HandleInheritability.Inheritable),
+            new(PipeDirection.Out, HandleInheritability.Inheritable))
     {
-        this.serverOutStream = new AnonymousPipeServerStream(
-            PipeDirection.Out, HandleInheritability.Inheritable);
-        this.serverInStream = new AnonymousPipeServerStream(
-            PipeDirection.In, HandleInheritability.Inheritable);
-
-        this.messenger = new ActiveMessenger(
-            this.serverInStream, this.serverOutStream);
+        ////////////////////////////////////////////////////////
+        // Initialze child process.
 
         this.puppetProcess.StartInfo.FileName = puppetPath;
         this.puppetProcess.StartInfo.Arguments =
-            $"{this.serverOutStream.GetClientHandleAsString()} {this.serverInStream.GetClientHandleAsString()} " +
+            $"{base.OutStream.GetClientHandleAsString()} {base.InStream.GetClientHandleAsString()} " +
             string.Join(" ", additionalArgs);
         this.puppetProcess.StartInfo.UseShellExecute = false;
         this.puppetProcess.StartInfo.CreateNoWindow = true;
@@ -47,7 +42,7 @@ public sealed class Marionettist : Driver<ActiveMessenger>
 #endif
         this.puppetProcess.StartInfo.WorkingDirectory = workingDirectoryPath;
 
-        this.puppetProcess.Exited += (s, e) => this.exited = true;
+        this.puppetProcess.Exited += (s, e) => this.puppetProcessExited = true;
         this.puppetProcess.EnableRaisingEvents = true;
     }
 
@@ -59,24 +54,26 @@ public sealed class Marionettist : Driver<ActiveMessenger>
 
             base.Dispose();
 
-            this.serverOutStream.Dispose();
-            this.serverInStream.Dispose();
-
             var watcher = new Thread(() =>
             {
                 for (var index = 0; index < 10; index++)
                 {
-                    if (this.exited)
+                    if (this.puppetProcessExited)
                     {
+                        Trace.WriteLine($"Marionetta: Puppet terminated, PuppetId={puppetProcess.Id}");
+                        puppetProcess.Dispose();
                         return;
                     }
 
+                    Trace.WriteLine($"Marionetta: Waiting puppet termination, PuppetId={puppetProcess.Id}, Count=[{index + 1}/10]");
                     Thread.Sleep(TimeSpan.FromMilliseconds(1000));
                 }
 
+                Trace.WriteLine($"Marionetta: Puppet stucked, kill it, PuppetId={puppetProcess.Id}");
                 puppetProcess.Kill();
                 puppetProcess.Dispose();
             });
+
             watcher.IsBackground = false;   // Force alives for watcher in process terminating.
             watcher.Start();
         }
@@ -84,7 +81,8 @@ public sealed class Marionettist : Driver<ActiveMessenger>
 
     public void Start()
     {
-        this.messenger.Start();
+        base.StartReadingAsynchronously();
         this.puppetProcess.Start();
+        Trace.WriteLine($"Marionetta: Marionettist started, PuppetId={this.puppetProcess.Id}");
     }
 }

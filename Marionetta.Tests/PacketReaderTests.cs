@@ -19,24 +19,6 @@ namespace Marionetta;
 [TestFixture]
 public sealed class PacketReaderTests
 {
-    private static byte[]? Extract(Stream? stream)
-    {
-        if (stream is MemoryStream ms)
-        {
-            return ms.ToArray();
-        }
-        else if (stream is { } s)
-        {
-            ms = new MemoryStream();
-            s.CopyTo(ms);
-            return ms.ToArray();
-        }
-        else
-        {
-            return null;
-        }
-    }
-
     [Test]
     public async Task Extract1Byte()
     {
@@ -46,7 +28,7 @@ public sealed class PacketReaderTests
         var actual0 = await pr.ReadPacketAsync(default);
 
         var expected0 = new byte[] { 0x12 };
-        AreEqual(expected0, Extract(actual0));
+        AreEqual(expected0, actual0);
 
         var actual1 = await pr.ReadPacketAsync(default);
         IsNull(actual1);
@@ -61,7 +43,7 @@ public sealed class PacketReaderTests
         var actual0 = await pr.ReadPacketAsync(default);
 
         var expected0 = new byte[] { 0x12, 0x34 };
-        AreEqual(expected0, Extract(actual0));
+        AreEqual(expected0, actual0);
 
         var actual1 = await pr.ReadPacketAsync(default);
         IsNull(actual1);
@@ -76,7 +58,7 @@ public sealed class PacketReaderTests
         var actual0 = await pr.ReadPacketAsync(default);
 
         var expected0 = new byte[] { 0x12 };
-        AreEqual(expected0, Extract(actual0));
+        AreEqual(expected0, actual0);
 
         var actual1 = await pr.ReadPacketAsync(default);
         IsNull(actual1);
@@ -91,7 +73,7 @@ public sealed class PacketReaderTests
         var actual0 = await pr.ReadPacketAsync(default);
 
         var expected0 = new byte[] { 0x12 };
-        AreEqual(expected0, Extract(actual0));
+        AreEqual(expected0, actual0);
 
         var actual1 = await pr.ReadPacketAsync(default);
         IsNull(actual1);
@@ -106,12 +88,12 @@ public sealed class PacketReaderTests
         var actual0 = await pr.ReadPacketAsync(default);
 
         var expected0 = new byte[] { 0x12 };
-        AreEqual(expected0, Extract(actual0));
+        AreEqual(expected0, actual0);
 
         var actual1 = await pr.ReadPacketAsync(default);
 
         var expected1 = new byte[] { 0x34 };
-        AreEqual(expected1, Extract(actual1));
+        AreEqual(expected1, actual1);
 
         var actual2 = await pr.ReadPacketAsync(default);
         IsNull(actual2);
@@ -126,7 +108,7 @@ public sealed class PacketReaderTests
         var actual0 = await pr.ReadPacketAsync(default);
 
         var expected0 = new byte[] { 0x12, 0x34 };
-        AreEqual(expected0, Extract(actual0));
+        AreEqual(expected0, actual0);
 
         var actual1 = await pr.ReadPacketAsync(default);
         IsNull(actual1);
@@ -141,7 +123,7 @@ public sealed class PacketReaderTests
         var actual0 = await pr.ReadPacketAsync(default);
 
         var expected0 = new byte[] { 0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc };
-        AreEqual(expected0, Extract(actual0));
+        AreEqual(expected0, actual0);
 
         var actual1 = await pr.ReadPacketAsync(default);
         IsNull(actual1);
@@ -156,7 +138,7 @@ public sealed class PacketReaderTests
         var actual0 = await pr.ReadPacketAsync(default);
 
         var expected0 = new byte[] { 0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc };
-        AreEqual(expected0, Extract(actual0));
+        AreEqual(expected0, actual0);
 
         var actual1 = await pr.ReadPacketAsync(default);
         IsNull(actual1);
@@ -171,7 +153,7 @@ public sealed class PacketReaderTests
         var actual0 = await pr.ReadPacketAsync(default);
 
         var expected0 = new byte[] { 0x12, 0x34 };
-        AreEqual(expected0, Extract(actual0));
+        AreEqual(expected0, actual0);
 
         var actual1 = await pr.ReadPacketAsync(default);
         IsNull(actual1);
@@ -186,7 +168,7 @@ public sealed class PacketReaderTests
         var actual0 = await pr.ReadPacketAsync(default);
 
         var expected0 = new byte[] { 0x12, 0x34 };
-        AreEqual(expected0, Extract(actual0));
+        AreEqual(expected0, actual0);
 
         var actual1 = await pr.ReadPacketAsync(default);
         IsNull(actual1);
