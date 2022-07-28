@@ -25,7 +25,7 @@ namespace Marionetta.Drivers;
 public abstract class Driver<TStream> : IMessenger, IDisposable
     where TStream : Stream
 {
-    private readonly MarionettaMessenger messenger = new();
+    private protected readonly MarionettaMessenger messenger = new();
     private readonly CancellationTokenSource cts = new();
     private Task? reading;
 
@@ -82,12 +82,6 @@ public abstract class Driver<TStream> : IMessenger, IDisposable
     public string[] RegisteredMethods =>
         this.messenger.RegisteredMethods;
 
-    public event EventHandler? ShutdownRequested
-    {
-        add => this.messenger.ShutdownRequested += value;
-        remove => this.messenger.ShutdownRequested -= value;
-    }
-
     public event EventHandler? ErrorDetected
     {
         add => this.messenger.ErrorDetected += value;
@@ -129,12 +123,6 @@ public abstract class Driver<TStream> : IMessenger, IDisposable
 
     protected void StartReadingAsynchronously() =>
         this.reading = this.StartReadingAsync();
-
-    public void Shutdown()
-    {
-        Trace.WriteLine("Marionetta: Send shutdown request to peer.");
-        this.messenger.RequestShutdownToPeer();
-    }
 
     ///////////////////////////////////////////////////////////////
 

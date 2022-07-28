@@ -7,6 +7,7 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////
 
+using System;
 using System.Diagnostics;
 using System.IO.Pipes;
 
@@ -19,6 +20,12 @@ public sealed class Puppet : Driver<AnonymousPipeClientStream>
             new(PipeDirection.In, receiveStreamName),
             new(PipeDirection.Out, sendStreamName))
     {
+    }
+
+    public event EventHandler? ShutdownRequested
+    {
+        add => this.messenger.ShutdownRequested += value;
+        remove => this.messenger.ShutdownRequested -= value;
     }
 
     public void Start()
