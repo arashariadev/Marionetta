@@ -43,11 +43,11 @@ public sealed class InMemoryFullDuplexTests
         var result1 = await masterPuppet.InvokePeerMethodAsync<int>("abc", 123, 456);
         var result2 = await masterPuppet.InvokePeerMethodAsync<string>("def", "aaa", "bbb");
 
-        masterPuppet.Shutdown();
-
         AreEqual(123 + 456, result1);
         AreEqual("aaabbb", result2);
 
-        await tcs.Task;
+        await Task.WhenAll(
+            masterPuppet.ShutdownAsync(default),
+            tcs.Task);
     }
 }

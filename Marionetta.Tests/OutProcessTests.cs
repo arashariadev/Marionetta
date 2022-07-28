@@ -52,9 +52,9 @@ public sealed class OutProcessTests
         var result1 = await marionettist.InvokePeerMethodAsync<int>("abc", 123, 456);
         var result2 = await marionettist.InvokePeerMethodAsync<string>("def", "aaa", "bbb");
 
-        marionettist.Shutdown();
-
         AreEqual(123 + 456, result1);
         AreEqual("aaabbb", result2);
+
+        await marionettist.ShutdownAsync(default);
     }
 }
