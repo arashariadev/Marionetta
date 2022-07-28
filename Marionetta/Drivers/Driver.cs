@@ -43,9 +43,6 @@ public abstract class Driver<TStream> : IMessenger, IDisposable
         ////////////////////////////////////////////////////////
         // Setup DupeNukem Messenger.
 
-        this.messenger.ShutdownRequested += (s, e) =>
-            Trace.WriteLine("Marionetta: Received shutdown request from peer.");
-
         this.messenger.SendRequest += (s, e) =>
         {
             var packet = Encoding.UTF8.GetBytes(e.JsonString);
@@ -66,6 +63,9 @@ public abstract class Driver<TStream> : IMessenger, IDisposable
             reading.Wait(1000);
 
             this.messenger.Dispose();
+
+            this.InStream.Dispose();
+            this.OutStream.Dispose();
         }
     }
 
