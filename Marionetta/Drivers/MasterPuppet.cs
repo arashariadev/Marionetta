@@ -33,4 +33,10 @@ public sealed class MasterPuppet : Driver<AnonymousPipeServerStream>
         base.StartReadingAsynchronously();
         Trace.WriteLine($"Marionetta: MasterPuppet started, PuppetId={Process.GetCurrentProcess().Id}");
     }
+
+    public void Shutdown()
+    {
+        Trace.WriteLine("Marionetta: Send shutdown request to peer.");
+        this.messenger.RequestShutdownToPeer();
+    }
 }

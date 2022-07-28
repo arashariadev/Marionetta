@@ -88,4 +88,10 @@ public sealed class Marionettist : Driver<AnonymousPipeServerStream>
         this.puppetProcess.Start();
         Trace.WriteLine($"Marionetta: Marionettist started, PuppetId={this.puppetProcess.Id}");
     }
+
+    public void Shutdown()
+    {
+        Trace.WriteLine("Marionetta: Send shutdown request to peer.");
+        this.messenger.RequestShutdownToPeer();
+    }
 }
