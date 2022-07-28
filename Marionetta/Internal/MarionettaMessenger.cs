@@ -8,9 +8,11 @@
 /////////////////////////////////////////////////////////////////////////////////////
 
 using DupeNukem;
+using DupeNukem.Internal;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 
 // Remove in future release.
 #pragma warning disable CS0618
@@ -19,7 +21,7 @@ namespace Marionetta.Internal
 {
     internal sealed class MarionettaMessenger : Messenger
     {
-        private readonly ManualResetEvent accepted = new(false);
+        private readonly TaskCompletionSource<int> accepted = new();
 
         public MarionettaMessenger()
         {
@@ -27,15 +29,13 @@ namespace Marionetta.Internal
 
         public event EventHandler? ShutdownRequested;
 
-        public void RequestShutdownToPeer(TimeSpan? timeout = default)
+        public Task RequestShutdownToPeerAsync(CancellationToken ct)
         {
             base.SendControlMessageToPeer("shutdown", null);
-            this.accepted.WaitOne(timeout is { } ?
-                timeout.Value :
-                TimeSpan.FromMilliseconds(1000));
+            return this.accepted.Task;
         }
 
-        protected override void OnReceivedControlMessage(
+        protected override async void OnReceivedControlMessage(
             string controlId, JToken? body)
         {
             switch (controlId)
@@ -43,15 +43,16 @@ namespace Marionetta.Internal
                 case "shutdown":
                     try
                     {
-                        this.ShutdownRequested?.Invoke(this, EventArgs.Empty);
+                        base.SendControlMessageToPeer("accepted", null);
                     }
                     finally
                     {
-                        base.SendControlMessageToPeer("accepted", null);
+                        await this.SynchContext.Bind();
+                        this.ShutdownRequested?.Invoke(this, EventArgs.Empty);
                     }
                     break;
                 case "accept":
-                    this.accepted.Set();
+                    this.accepted.TrySetResult(0);
                     break;
             }
         }
