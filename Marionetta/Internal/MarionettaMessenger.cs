@@ -29,10 +29,14 @@ namespace Marionetta.Internal
 
         public event EventHandler? ShutdownRequested;
 
-        public Task RequestShutdownToPeerAsync(CancellationToken ct)
+        public async Task RequestShutdownToPeerAsync(CancellationToken ct)
         {
             base.SendControlMessageToPeer("shutdown", null);
-            return this.accepted.Task;
+
+            using var _ = ct.Register(() => this.accepted.TrySetCanceled());
+
+            await this.accepted.Task.
+                ConfigureAwait(false);
         }
 
         protected override async void OnReceivedControlMessage(
