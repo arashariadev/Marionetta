@@ -51,7 +51,7 @@ namespace Marionetta.Internal
                         this.ShutdownRequested?.Invoke(this, EventArgs.Empty);
                     }
                     break;
-                case "accept":
+                case "accepted":
                     this.accepted.TrySetResult(0);
                     break;
             }

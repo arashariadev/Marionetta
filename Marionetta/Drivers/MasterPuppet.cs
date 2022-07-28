@@ -10,6 +10,8 @@
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Marionetta.Drivers;
 
@@ -34,9 +36,9 @@ public sealed class MasterPuppet : Driver<AnonymousPipeServerStream>
         Trace.WriteLine($"Marionetta: MasterPuppet started, PuppetId={Process.GetCurrentProcess().Id}");
     }
 
-    public void Shutdown()
+    public Task ShutdownAsync(CancellationToken ct)
     {
         Trace.WriteLine("Marionetta: Send shutdown request to peer.");
-        this.messenger.RequestShutdownToPeer();
+        return this.messenger.RequestShutdownToPeerAsync(ct);
     }
 }
