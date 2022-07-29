@@ -31,6 +31,10 @@ For example, a library that is fixed to `x86` instead of `Any CPU` and limited t
 the `net35` operating environment can be loaded and called remotely under process isolation.
 Conceptually, it is similar to .NET Remoting, but as you know,
 it is obsolete in .NET 6/5 and .NET Core.
+
+Of course, it can also be used when the target is not a legacy library,
+but simply wants to run in a sandbox environment.
+
 Marionetta does not yet support transparent proxies,
 but allows running on .NET Core runtimes and remote method invocation
 with an API that is easy enough to understand.
@@ -50,7 +54,7 @@ This is in consideration of legacy libraries that are sensitive to the operating
 
 ----
 
-## How to start
+## How to use
 
 Marionetta installs and uses [NuGet package Marionetta](https://www.nuget.org/packages/Marionetta) in both of the following projects:
 
@@ -60,7 +64,7 @@ Marionetta installs and uses [NuGet package Marionetta](https://www.nuget.org/pa
 |Slave|`Puppet`|The side being controlled, i.e. the side containing legacy libraries. It is an independent program and starts as a child process.|
 
 You can intentionally use Marionetta in the same process.
-In that case, use `MasterPuppet` and `Puppet` classes in pairs.
+In that case, use `MasterPuppet` and `SlavePuppet` classes in pairs.
 
 ### How to configure slaves
 
@@ -83,18 +87,18 @@ to host a legacy library that uses WPF:
 using Marionetta;
 using DupeNukem;
 
-[STAThread]
+[STAThread]  // (1)
 public static void Main(string[] args)
 {
     // Initialize the Application class
     var app = new Application();
 
-    // Explicitly assign a SynchContext to enforce STAThread
+    // (2) Explicitly assign a SynchContext to enforce STAThread
     // (Captured during Puppet creation)
     var sc = new DispatcherSynchronizationContext();
     SetSynchronizationContext(sc); SynchronizationContext;
 
-    // Generate Puppet
+    // Generate Puppet from factory
     var arguments = DriverFactory.ParsePuppetArguments(args);
     using var puppet = DriverFactory.CreatePuppet(arguments);
 
@@ -111,10 +115,53 @@ public static void Main(string[] args)
     // Run Puppet (in background)
     puppet.Start();
  
-    // Run the message pump
+    // (3) Run the message pump
     app.Run();
 }
 ```
+
+When working with legacy libraries,
+it is necessary to reproduce the situation implicitly assumed by WPF. In other words:
+
+1. The thread is basically under `STAThread`.
+2. WPF's `SynchronizationContext` is allocated.
+3. Use the `Application` class to make the message pump work.
+
+In particular, for 2, it is recommended to pre-configure as above,
+since it will be automatically invoked on the UI thread
+when a remote invocation from the master occurs.
+
+The class `LegacyController` that manipulates the legacy library
+must be able to reference methods from the master.
+This is done by simply applying the `CallableTarget` attribute:
+
+```csharp
+public sealed class LegacyController
+{
+    // Hold legacy library classes
+    private readonly LegacyDirtyClass legacyDirtyClass = new();
+
+    // Make it available for reference from the master side
+    [CallableTarget]
+    public Task<string> GetValueAsync(int parameter)
+    {
+        // Use legacy library class
+        var result = this.legacyDirtyClass.GetValue(parameter);
+
+        // Return the result directly
+        return Task.FromResult(result);
+    }
+}
+```
+
+The return value of the method must always be `Task` or `Task<T>`.
+This means that you can implement asynchronous methods in a straightforward manner,
+or you can implement them synchronously as described above.
+
+This constraint is because DupeNukem requires it,
+[and may be able to return a direct value in the future.](https://github.com/kekyo/DupeNukem/issues/4)
+
+### How to configure the master
 
 TODO:
 
