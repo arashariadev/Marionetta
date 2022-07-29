@@ -14,6 +14,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		LICENSE = LICENSE
 		NuGet.Config = NuGet.Config
 		README.md = README.md
+		README_ja.md = README_ja.md
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Marionetta.Tests", "Marionetta.Tests\Marionetta.Tests.csproj", "{C316232F-DF01-470C-8B3D-8CE533B564D8}"

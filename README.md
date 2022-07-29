@@ -20,6 +20,8 @@ Marionetta - Split dirty older architecthre based component depending with sandb
 
 ----
 
+[![Japanese language](Images/Japanese.256.png)](https://github.com/kekyo/Marionetta/blob/main/README_ja.md)
+
 ## What is this?
 
 Marionetta is a solution that allows a very exclusive (and possibly proprietary software) .NET library
@@ -33,31 +35,106 @@ Marionetta does not yet support transparent proxies,
 but allows running on .NET Core runtimes and remote method invocation
 with an API that is easy enough to understand.
 
-Another motivation is the problem of ASP.NET's infrastructure being too large.
-If ASP.NET were used as the endpoint for RPC invocation (related ASP.NET WebAPI),
-its set of dependent libraries would be too large and require an up-to-date environment,
-making it impossible to coexist with the aforementioned libraries.
-.NET as the RPC calling endpoint, there is a high possibility that
-it will not be able to coexist with the aforementioned libraries.
+Marionetta uses [DupeNukem](https://github.com/kekyo/DupeNukem) as the basis for the back-end RPC transfer.
 
-These issues led us to design Marionetta.
+### Operating Environment
 
-There are several other such libraries, commonly called "IPC" or "RPC" libraries.
-Marionetta's goal is to be as easy to use as possible
-and to eliminate the prerequisites, constraints, and background knowledge often associated
-with "IPC" and "RPC" libraries.
+The following platforms are supported by the package.
+A separate assembly is provided for each version.
+This is in consideration of legacy libraries that are sensitive to the operating environment.
 
-Marionetta uses [DupeNukem](https://github.com/kekyo/DupeNukem) as the basis for back-end RPC transportion.
-Briefly, it uses a JSON serializer (with which you are familiar [NewtonSoft.Json](https://www.newtonsoft.com/json)) to
-anonymous pipe between the processes to allow asynchronous mutual method invocation on both sides.
-
-TODO:
+* NET 6, 5
+* NET Core 3.1, 3.0, 2.2 to 2.0
+* NET Standard 2.1, 2.0, 1.6 to 1.3
+* NET Framework 4.8 to 4.0, 3.5
 
 ----
 
 ## How to start
 
+Marionetta installs and uses [NuGet package Marionetta](https://www.nuget.org/packages/Marionetta) in both of the following projects:
+
+|Role|Class|Overview|
+|:----|:----|:----|
+|Master|`Marionettist`|The application side of the control.|
+|Slave|`Puppet`|The side being controlled, i.e. the side containing legacy libraries. It is an independent program and starts as a child process.|
+
+You can intentionally use Marionetta in the same process.
+In that case, use `MasterPuppet` and `Puppet` classes in pairs.
+
+### How to configure slaves
+
+There are many possible operating conditions for legacy libraries.
+For example, instead of `AnyCPU`, which is most common in .NET,
+or the platform specification such as `x86` or `x64` is required,
+or the configuration of the slave library is not `STAThread`
+and `Slave` as expected in WPF or Windows Forms.
+
+Window message pumping by `STAThread` and `Application` classes is
+required to drive the main thread, etc.
+
+Therefore, it is necessary to write custom execution code
+(although the amount of code is small).
+
+The following is an example of how to configure a slave
+to host a legacy library that uses WPF:
+
+```csharp
+using Marionetta;
+using DupeNukem;
+
+[STAThread]
+public static void Main(string[] args)
+{
+    // Initialize the Application class
+    var app = new Application();
+
+    // Explicitly assign a SynchContext to enforce STAThread
+    // (Captured during Puppet creation)
+    var sc = new DispatcherSynchronizationContext();
+    SetSynchronizationContext(sc); SynchronizationContext;
+
+    // Generate Puppet
+    var arguments = DriverFactory.ParsePuppetArguments(args);
+    using var puppet = DriverFactory.CreatePuppet(arguments);
+
+    // Register a remote callable instance
+    // (similar to DupeNukem usage)
+    var legacy = new LegacyController();
+    puppet.RegisterObject("legacy", legacy);
+
+    // Shutdown notification is triggered by the master
+    puppet.ShutdownRequested += (s, e) =>
+        // Shutdown the WPF application
+        app.Shutdown();
+
+    // Run Puppet (in background)
+    puppet.Start();
+ 
+    // Run the message pump
+    app.Run();
+}
+```
+
 TODO:
+
+----
+
+## Background
+
+One of the major motivations is the problem that the ASP.NET infrastructure is too large.
+ASP.NET as an endpoint for RPC calls (the associated ASP.NET WebAPI),
+would result in a huge number of libraries to depend on and require an up-to-date environment to
+coexistence with legacy libraries can become impossible.
+
+There are several other libraries that can be used to implement sandboxing, and
+Marionetta uses a technology commonly referred to as "IPC" or "RPC".
+Marionetta is an extension of "IPC" and "RPC" as well,
+but by designing it with as few dependencies on other libraries as possible,
+we have tried to eliminate the prerequisites, constraints, and background knowledge.
+
+DupeNukem uses JSON for its serializer (the familiar [NewtonSoft.Json](https://www.newtonsoft.com/json)),
+but NewtonSoft.Json is also well thought out as a library, independent and supports a wide range of platforms.
 
 ----
 
