@@ -10,6 +10,7 @@
 using System;
 using System.Diagnostics;
 using System.IO.Pipes;
+using System.Threading;
 
 namespace Marionetta.Drivers;
 
@@ -91,20 +92,20 @@ public sealed class Puppet : Driver<AnonymousPipeClientStream>
         {
         }
 #endif
-
-        Trace.WriteLine($"Marionetta: Gave up suicide...");
     }
 
     private void OnExit(object sender, EventArgs e)
     {
         Trace.WriteLine(
-            $"Marionetta: Detected termination for parent process: Id={this.parentProcess.Id}");
+            $"Marionetta: Detected termination for parent process: ParentId={this.parentProcess.Id}");
+        Thread.Sleep(100);
         Suicide(this.currentProcess);
+        Trace.WriteLine($"Marionetta: Gave up suicide...");
     }
 
     public void Start()
     {
         base.StartReadingAsynchronously();
-        Trace.WriteLine($"Marionetta: Puppet started, PuppetId={Process.GetCurrentProcess().Id}");
+        Trace.WriteLine($"Marionetta: Puppet started.");
     }
 }

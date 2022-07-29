@@ -28,9 +28,6 @@ public sealed class SlavePuppet : Driver<AnonymousPipeClientStream>
         remove => this.messenger.ShutdownRequested -= value;
     }
 
-    public void Start()
-    {
+    public void Start() =>
         base.StartReadingAsynchronously();
-        Trace.WriteLine($"Marionetta: Puppet started, PuppetId={Process.GetCurrentProcess().Id}");
-    }
 }
