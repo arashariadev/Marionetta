@@ -31,6 +31,8 @@ Marionettaは、非常に排他的な（そして恐らくプロプライエタ�
 分離されたプロセスの元でロードし、リモートで呼び出すことができます。
 概念的には.NET Remotingに似ていますが、ご存知の通り、.NET 6/5と.NET Coreでは廃止されています。
 
+もちろん、対象がレガシーライブラリではなくとも、単にサンドボックス環境で動作させたい時にも使えます。
+
 Marionettaはまだ透過的なプロキシをサポートしていません。
 しかし、.NET Coreランタイム上での実行とリモートメソッド呼び出しは可能で、
 十分に理解しやすいAPIで実行することができます。
@@ -59,7 +61,7 @@ Marionettaは、以下の両方のプロジェクトに、[NuGetパッケージ 
 |マスター|`Marionettist`|制御を行うアプリケーション側です。|
 |スレーブ|`Puppet`|制御される側、つまりレガシーライブラリを含む側です。独立したプログラムで、子プロセスとして起動します。|
 
-同一のプロセス内で、意図的にMarionettaを使う事も出来ます。その場合は、`MasterPuppet`と`Puppet`クラスを組で使用します。
+同一のプロセス内で、意図的にMarionettaを使う事も出来ます。その場合は、`MasterPuppet`と`SlavePuppet`クラスを組で使用します。
 
 ### スレーブの構成方法
 
@@ -74,18 +76,18 @@ Marionettaは、以下の両方のプロジェクトに、[NuGetパッケージ 
 using Marionetta;
 using DupeNukem;
 
-[STAThread]
+[STAThread]  // (1)
 public static void Main(string[] args)
 {
     // Applicationクラスの初期化
     var app = new Application();
 
-    // STAThreadを強制するため、明示的にSynchContextを割り当てる
+    // (2) STAThreadを強制するため、明示的にSynchContextを割り当てる
     // (Puppetの生成時にキャプチャされる)
     var sc = new DispatcherSynchronizationContext();
     SynchronizationContext.SetSynchronizationContext(sc);
 
-    // Puppetを生成する
+    // ファクトリからPuppetを生成する
     var arguments = DriverFactory.ParsePuppetArguments(args);
     using var puppet = DriverFactory.CreatePuppet(arguments);
 
@@ -102,10 +104,50 @@ public static void Main(string[] args)
     // Puppetを実行する（バックグラウンドで実行される）
     puppet.Start();
  
-    // メッセージポンプの実行
+    // (3) メッセージポンプの実行
     app.Run();
 }
 ```
+
+レガシーライブラリを操作する場合は、WPFが暗黙に想定する状況を再現する必要があります。つまり:
+
+1. スレッドは基本的に`STAThread`の配下にある。
+2. WPFの`SynchronizationContext`が、割り当てられている。
+3. メッセージポンプを機能させるために、`Application`クラスを使用する。
+
+特に、2については、マスターからのリモート呼び出しが発生した時に、
+自動的にUIスレッド上で呼び出されるため、
+上記のように事前に構成しておくことをお勧めします。
+
+レガシーライブラリを操作するクラス `LegacyController` は、
+マスターからメソッドが参照できるようにする必要があります。
+これは、単に`CallableTarget`属性を適用するだけでOKです:
+
+```csharp
+public sealed class LegacyController
+{
+    // レガシーライブラリのクラスを保持
+    private readonly LegacyDirtyClass legacyDirtyClass = new();
+
+    // マスター側から参照可能にする
+    [CallableTarget]
+    public Task<string> GetValueAsync(int parameter)
+    {
+        // レガシーライブラリクラスを使う
+        var result = this.legacyDirtyClass.GetValue(parameter);
+
+        // 結果を返す
+        return Task.FromResult(result);
+    }
+}
+```
+
+メソッドの戻り値は、常に`Task`か`Task<T>`である必要があります。
+つまり、素直に非同期メソッドを実装する事が可能であり、或いは、上記のように同期的に実装する事も出来ます。
+
+この制約は、DupeNukemが必要としているためで、[将来的には直値を返却できるようになる可能性があります。](https://github.com/kekyo/DupeNukem/issues/4)
+
+### マスターの構成方法
 
 TODO:
 
