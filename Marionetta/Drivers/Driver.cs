@@ -71,6 +71,13 @@ public abstract class Driver<TStream> : IMessenger, IDisposable
 
     ///////////////////////////////////////////////////////////////
 
+    [EditorBrowsable(EditorBrowsableState.Advanced)]
+    public bool SendExceptionWithStackTrace
+    {
+        get => this.messenger.SendExceptionWithStackTrace;
+        set => this.messenger.SendExceptionWithStackTrace = value;
+    }
+
     [EditorBrowsable(EditorBrowsableState.Never)]
     public NamingStrategy MemberAccessNamingStrategy =>
         this.messenger.MemberAccessNamingStrategy;

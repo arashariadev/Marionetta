@@ -23,9 +23,10 @@ namespace Marionetta.Internal
     {
         private readonly TaskCompletionSource<int> accepted = new();
 
-        public MarionettaMessenger()
-        {
-        }
+        public MarionettaMessenger() =>
+            // Made defaulted with stack trace.
+            // Because Marionetta is IPC and both sides are supposed to know each other's origins.
+            base.SendExceptionWithStackTrace = true;
 
         public event EventHandler? ShutdownRequested;
 
