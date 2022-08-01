@@ -31,6 +31,7 @@ namespace Marionetta.Internal
 
         public async Task RequestShutdownToPeerAsync(CancellationToken ct)
         {
+            base.CancelAllSuspending();
             base.SendControlMessageToPeer("shutdown", null);
 
             using var _ = ct.Register(() => this.accepted.TrySetCanceled());
@@ -45,6 +46,7 @@ namespace Marionetta.Internal
             switch (controlId)
             {
                 case "shutdown":
+                    base.CancelAllSuspending();
                     try
                     {
                         base.SendControlMessageToPeer("accepted", null);

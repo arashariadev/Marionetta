@@ -23,7 +23,7 @@ public sealed class InMemoryFullDuplexTests
     public async Task Send1Packet()
     {
         using var masterPuppet = new MasterPuppet();
-        using var slavePuppet = new Puppet(
+        using var slavePuppet = new SlavePuppet(
             masterPuppet.SendStreamName, masterPuppet.ReceiveStreamName);
 
         var tcs = new TaskCompletionSource<bool>();

@@ -37,7 +37,7 @@ public sealed class Marionettist : Driver<AnonymousPipeServerStream>
             Utilities.GetDotNetApplicationInvokingString(puppetPath);
         this.puppetProcess.StartInfo.FileName = appPath;
         this.puppetProcess.StartInfo.Arguments =
-            $"{arg0} {base.OutStream.GetClientHandleAsString()} {base.InStream.GetClientHandleAsString()} " +
+            $"{arg0} {Process.GetCurrentProcess().Id} {base.OutStream.GetClientHandleAsString()} {base.InStream.GetClientHandleAsString()} " +
             string.Join(" ", additionalArgs);
         this.puppetProcess.StartInfo.UseShellExecute = false;
         this.puppetProcess.StartInfo.CreateNoWindow = true;
