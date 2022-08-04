@@ -63,6 +63,9 @@ public sealed class Puppet : Driver<AnonymousPipeClientStream>
         base.Dispose();
     }
 
+    public int MarionettistId =>
+        this.parentProcess.Id;
+
     public event EventHandler? ShutdownRequested
     {
         add => this.messenger.ShutdownRequested += value;

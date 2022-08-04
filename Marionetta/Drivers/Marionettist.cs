@@ -17,10 +17,14 @@ using System.Threading.Tasks;
 
 namespace Marionetta.Drivers;
 
+public sealed class PuppetDiedEventArgs : EventArgs
+{
+}
+
 public sealed class Marionettist : Driver<AnonymousPipeServerStream>
 {
     private Process puppetProcess = new();
-    private bool puppetProcessExited;
+    private CancellationTokenSource exited = new();
 
     public Marionettist(
         string puppetPath,
@@ -46,7 +50,7 @@ public sealed class Marionettist : Driver<AnonymousPipeServerStream>
 #endif
         this.puppetProcess.StartInfo.WorkingDirectory = workingDirectoryPath;
 
-        this.puppetProcess.Exited += (s, e) => this.puppetProcessExited = true;
+        this.puppetProcess.Exited += this.OnExited!;
         this.puppetProcess.EnableRaisingEvents = true;
     }
 
@@ -62,10 +66,11 @@ public sealed class Marionettist : Driver<AnonymousPipeServerStream>
             {
                 for (var index = 0; index < 10; index++)
                 {
-                    if (this.puppetProcessExited)
+                    if (this.exited.IsCancellationRequested)
                     {
                         Trace.WriteLine($"Marionetta: Puppet terminated, PuppetId={puppetProcess.Id}");
                         puppetProcess.Dispose();
+                        puppetProcess.Exited -= this.OnExited!;
                         return;
                     }
 
@@ -76,23 +81,56 @@ public sealed class Marionettist : Driver<AnonymousPipeServerStream>
                 Trace.WriteLine($"Marionetta: Puppet stucked, kill it, PuppetId={puppetProcess.Id}");
                 puppetProcess.Kill();
                 puppetProcess.Dispose();
+                puppetProcess.Exited -= this.OnExited!;
             });
 
-            watcher.IsBackground = false;   // Force alives for watcher in process terminating.
+            watcher.IsBackground = true;
             watcher.Start();
         }
+    }
+
+    public int PuppetId =>
+        this.puppetProcess.Id;
+
+    private void OnExited(object sender, EventArgs e)
+    {
+        base.messenger.CancelAllSuspending();
+        base.OnErrorDetected(this, new PuppetDiedEventArgs());
+
+        this.exited.Cancel();
     }
 
     public void Start()
     {
         base.StartReadingAsynchronously();
         this.puppetProcess.Start();
-        Trace.WriteLine($"Marionetta: Marionettist started, PuppetId={this.puppetProcess.Id}");
+        Trace.WriteLine(
+            $"Marionetta: Marionettist started, PuppetId={this.puppetProcess.Id}");
     }
 
-    public Task ShutdownAsync(CancellationToken ct)
+    public async Task ShutdownAsync(CancellationToken ct)
     {
-        Trace.WriteLine("Marionetta: Send shutdown request to peer.");
-        return this.messenger.RequestShutdownToPeerAsync(ct);
+        // Non-atomic graceful shutdown
+        if (!this.exited.IsCancellationRequested)
+        {
+            Trace.WriteLine("Marionetta: Send shutdown request to peer.");
+
+            // Atomic graceful shutdown
+            using var _ = ct.Register(() => this.exited.Cancel());
+            try
+            {
+                await base.messenger.RequestShutdownToPeerAsync(
+                    this.exited.Token).
+                    ConfigureAwait(false);
+            }
+            catch (TaskCanceledException)
+            {
+                // Canceled by caller
+                if (ct.IsCancellationRequested)
+                {
+                    throw;
+                }
+            }
+        }
     }
 }
