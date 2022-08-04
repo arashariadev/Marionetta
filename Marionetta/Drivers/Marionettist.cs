@@ -1,4 +1,4 @@
-/////////////////////////////////////////////////////////////////////////////////////
+﻿/////////////////////////////////////////////////////////////////////////////////////
 //
 // Marionetta - Split dirty component into sandboxed outprocess.
 // Copyright (c) Kouji Matsui (@kozy_kekyo, @kekyo@mastodon.cloud)
@@ -84,7 +84,7 @@ public sealed class Marionettist : Driver<AnonymousPipeServerStream>
                 puppetProcess.Exited -= this.OnExited!;
             });
 
-            watcher.IsBackground = false;   // Force alives for watcher in process terminating.
+            watcher.IsBackground = true;
             watcher.Start();
         }
     }
