@@ -21,6 +21,13 @@ namespace Marionetta.Internal;
 
 public static class Utilities
 {
+    internal static readonly TimeSpan InfiniteTimeout =
+#if NET35 || NET40
+        new TimeSpan(0, 0, 0, 0, -1);
+#else
+        Timeout.InfiniteTimeSpan;
+#endif
+
     public static JsonSerializer GetDefaultJsonSerializer()
     {
         var defaultNamingStrategy = new CamelCaseNamingStrategy();
@@ -101,7 +108,7 @@ public static class Utilities
                 tcs.TrySetException(ex);
             }
         }
-#endif   
+#endif
 
         return tcs.Task;
     }

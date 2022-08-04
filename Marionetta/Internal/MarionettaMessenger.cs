@@ -1,4 +1,4 @@
-/////////////////////////////////////////////////////////////////////////////////////
+﻿/////////////////////////////////////////////////////////////////////////////////////
 //
 // Marionetta - Split dirty component into sandboxed outprocess.
 // Copyright (c) Kouji Matsui (@kozy_kekyo, @kekyo@mastodon.cloud)
@@ -23,7 +23,9 @@ namespace Marionetta.Internal
     {
         private readonly TaskCompletionSource<int> accepted = new();
 
-        public MarionettaMessenger() =>
+        public MarionettaMessenger() :
+            // IPC (pipe) is a relatively reliable transport environment and does not allow timeouts to be detected.
+            base(Utilities.InfiniteTimeout) =>
             // Made defaulted with stack trace.
             // Because Marionetta is IPC and both sides are supposed to know each other's origins.
             base.SendExceptionWithStackTrace = true;
