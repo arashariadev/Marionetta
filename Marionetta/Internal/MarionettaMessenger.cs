@@ -1,4 +1,4 @@
-﻿/////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////
 //
 // Marionetta - Split dirty component into sandboxed outprocess.
 // Copyright (c) Kouji Matsui (@kozy_kekyo, @kekyo@mastodon.cloud)
@@ -40,6 +40,9 @@ namespace Marionetta.Internal
             await this.accepted.Task.
                 ConfigureAwait(false);
         }
+
+        public new void CancelAllSuspending() =>
+            base.CancelAllSuspending();
 
         protected override async void OnReceivedControlMessage(
             string controlId, JToken? body)

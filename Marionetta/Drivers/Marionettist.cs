@@ -46,7 +46,7 @@ public sealed class Marionettist : Driver<AnonymousPipeServerStream>
 #endif
         this.puppetProcess.StartInfo.WorkingDirectory = workingDirectoryPath;
 
-        this.puppetProcess.Exited += (s, e) => this.puppetProcessExited = true;
+        this.puppetProcess.Exited += this.OnExited!;
         this.puppetProcess.EnableRaisingEvents = true;
     }
 
@@ -66,6 +66,7 @@ public sealed class Marionettist : Driver<AnonymousPipeServerStream>
                     {
                         Trace.WriteLine($"Marionetta: Puppet terminated, PuppetId={puppetProcess.Id}");
                         puppetProcess.Dispose();
+                        puppetProcess.Exited -= this.OnExited!;
                         return;
                     }
 
@@ -76,11 +77,18 @@ public sealed class Marionettist : Driver<AnonymousPipeServerStream>
                 Trace.WriteLine($"Marionetta: Puppet stucked, kill it, PuppetId={puppetProcess.Id}");
                 puppetProcess.Kill();
                 puppetProcess.Dispose();
+                puppetProcess.Exited -= this.OnExited!;
             });
 
             watcher.IsBackground = false;   // Force alives for watcher in process terminating.
             watcher.Start();
         }
+    }
+
+    private void OnExited(object sender, EventArgs e)
+    {
+        base.messenger.CancelAllSuspending();
+        this.puppetProcessExited = true;
     }
 
     public void Start()
@@ -93,6 +101,6 @@ public sealed class Marionettist : Driver<AnonymousPipeServerStream>
     public Task ShutdownAsync(CancellationToken ct)
     {
         Trace.WriteLine("Marionetta: Send shutdown request to peer.");
-        return this.messenger.RequestShutdownToPeerAsync(ct);
+        return base.messenger.RequestShutdownToPeerAsync(ct);
     }
 }
