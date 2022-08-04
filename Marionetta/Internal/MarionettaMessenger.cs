@@ -23,7 +23,9 @@ namespace Marionetta.Internal
     {
         private readonly TaskCompletionSource<int> accepted = new();
 
-        public MarionettaMessenger() =>
+        public MarionettaMessenger() :
+            // IPC (pipe) is a relatively reliable transport environment and does not allow timeouts to be detected.
+            base(Utilities.InfiniteTimeout) =>
             // Made defaulted with stack trace.
             // Because Marionetta is IPC and both sides are supposed to know each other's origins.
             base.SendExceptionWithStackTrace = true;
@@ -40,6 +42,9 @@ namespace Marionetta.Internal
             await this.accepted.Task.
                 ConfigureAwait(false);
         }
+
+        public new void CancelAllSuspending() =>
+            base.CancelAllSuspending();
 
         protected override async void OnReceivedControlMessage(
             string controlId, JToken? body)

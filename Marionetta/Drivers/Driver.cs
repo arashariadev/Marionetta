@@ -43,6 +43,7 @@ public abstract class Driver<TStream> : IMessenger, IDisposable
         ////////////////////////////////////////////////////////
         // Setup DupeNukem Messenger.
 
+        this.messenger.ErrorDetected += this.OnErrorDetected!;
         this.messenger.SendRequest += (s, e) =>
         {
             var packet = Encoding.UTF8.GetBytes(e.JsonString);
@@ -63,6 +64,7 @@ public abstract class Driver<TStream> : IMessenger, IDisposable
             reading.Wait(1000);
 
             this.messenger.Dispose();
+            this.messenger.ErrorDetected -= this.OnErrorDetected!;
 
             this.InStream.Dispose();
             this.OutStream.Dispose();
@@ -89,11 +91,10 @@ public abstract class Driver<TStream> : IMessenger, IDisposable
     public string[] RegisteredMethods =>
         this.messenger.RegisteredMethods;
 
-    public event EventHandler? ErrorDetected
-    {
-        add => this.messenger.ErrorDetected += value;
-        remove => this.messenger.ErrorDetected -= value;
-    }
+    protected void OnErrorDetected(object sender, EventArgs e) =>
+        this.ErrorDetected?.Invoke(this, e);
+
+    public event EventHandler? ErrorDetected;
 
     ///////////////////////////////////////////////////////////////
 

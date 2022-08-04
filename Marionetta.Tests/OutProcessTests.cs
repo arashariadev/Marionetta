@@ -8,7 +8,10 @@
 /////////////////////////////////////////////////////////////////////////////////////
 
 using DupeNukem;
+using Marionetta.Drivers;
 using NUnit.Framework;
+using System;
+using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -56,5 +59,42 @@ public sealed class OutProcessTests
         AreEqual("aaabbb", result2);
 
         await marionettist.ShutdownAsync(default);
+    }
+
+    [Test]
+    public async Task OutProcessDyingPuppet()
+    {
+        using var marionettist = DriverFactory.CreateMarionettist(puppetPath);
+
+        static Task<int> abc(int a, int b) =>
+            Task.FromResult(a + b);
+        static Task<string> def(string a, string b) =>
+            Task.FromResult(a + b);
+
+        marionettist.RegisterFunc<int, int, int>("abc", abc);
+        marionettist.RegisterFunc<string, string, string>("def", def);
+
+        EventArgs? re = null;
+        marionettist.ErrorDetected += (s, e) => re = e;
+
+        marionettist.Start();
+
+        var result1Task = marionettist.InvokePeerMethodAsync<int>("abc", 123, 456);
+
+        var p = Process.GetProcessById(marionettist.PuppetId);
+        p.Kill();
+
+        try
+        {
+            await result1Task;
+            Fail();
+        }
+        catch (TaskCanceledException)
+        {
+        }
+
+        await marionettist.ShutdownAsync(default);
+
+        IsInstanceOf<PuppetDiedEventArgs>(re);
     }
 }
